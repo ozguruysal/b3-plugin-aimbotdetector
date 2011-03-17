@@ -2,7 +2,7 @@ Aimbot Detector plugin for Big Brother Bot (www.bigbrotherbot.net)
 ===================================================================
 
 Author: Freelander - freelander@bigbrotherbot.net
-Author URI: http//www.bigbrotherbot.net
+Author URI: http://www.bigbrotherbot.net
 Author URI: http://www.fps-gamer.net
 
 Description
@@ -27,7 +27,7 @@ Installation
  * copy aimbotdetector.xml into your b3/extplugins/conf folder
  * edit aimbotdetector.xml with your preferred settings
  * update your main b3 config file with :
-<plugin name="aimbotdetector" config="@conf/extplugins/aimbotdetector.xml"/>
+   <plugin name="aimbotdetector" config="@b3/extplugins/conf/aimbotdetector.xml"/>
 
 
 Support
