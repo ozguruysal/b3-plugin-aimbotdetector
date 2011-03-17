@@ -1,0 +1,36 @@
+Aimbot Detector plugin for Big Brother Bot (www.bigbrotherbot.net)
+===================================================================
+
+Author: Freelander - freelander@bigbrotherbot.net
+Author URI: http//www.bigbrotherbot.net
+Author URI: http://www.fps-gamer.net
+
+Description
+-----------
+
+This plugin detects unusual killstreaks for a given body part. (Generally this is supposed to be headshot kills)
+For instance it can be adjusted to detect headshots made in a row and if headshot kill streak reaches to a set 
+value, either the player is kicked or all online admins are notified.
+
+
+Changelog
+---------
+
+ * 17.03.2011 - Freelander
+     Initial release
+
+ 
+Installation
+------------
+
+ * copy aimbotdetector.py into b3/extplugins
+ * copy aimbotdetector.xml into your b3/extplugins/conf folder
+ * edit aimbotdetector.xml with your preferred settings
+ * update your main b3 config file with :
+<plugin name="aimbotdetector" config="@conf/extplugins/aimbotdetector.xml"/>
+
+
+Support
+-------
+
+see the B3 forums: http://forum.bigbrotherbot.net/releases/aimbot-detector-plugin/

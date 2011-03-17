@@ -1,0 +1,28 @@
+<configuration plugin="aimbotdetector">
+	<settings name="settings">
+		<!-- Hit location console code -->
+		<set name="hitloc">head</set>
+		<!-- 
+		Number of killstreak for the specific hitlocation. When the number 
+		specified here is reached, either the client will be kicked or online admins
+		get notified depending on your selection
+		-->
+		<set name="treshold">15</set>
+		<!-- 
+		If you want player to be kicked when the treshold setting is reached, set it to "1"
+		If you want online admins get notified only, set it to "0"
+		-->
+		<set name="kick">0</set>
+		<!--
+		If you have chosen to notify online admins, all admins equal or higher level will get 
+		notified via PM
+		-->
+		<set name="adminlevel">40</set>
+		<!-- Minimum level to ignore. i.e. players with equal or higher level will not be checked -->
+		<set name="ignorelevel">40</set>
+	</settings>
+	<settings name="messages">
+		<set name="warnmessage">^1ATTENTION: ^7%s maybe using aimbot! Better check it out.</set>
+		<set name="kickmessage">^1Aimbot Detected!</set>
+	</settings>
+</configuration>
