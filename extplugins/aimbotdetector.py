@@ -120,7 +120,7 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
                 self.checkHitlocKillStreak(HitlocStats.hitloc_kills, client)
             else:
                 HitlocStats.hitloc_kills = 0
-                self.debug('Hitloc killstreak was reset for %s' % client.name)
+                #self.debug('Hitloc killstreak was reset for %s' % client.name)
 
     def checkHitlocKillStreak(self, hitloc_kills, client=None):
         """chekcs if the clients current hitloc killstreak reaches to theshold set
