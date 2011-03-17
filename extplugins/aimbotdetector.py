@@ -101,9 +101,7 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
         return client.var(self, self._clientvar_name).value
 
     def checkHitlocKills(self, client=None, victim=None, damage_location=None):
-        """A kill specific to a hit location was made. Add 1 to the client and set his 
-        deaths to 0. For all deaths ignore hit location and add 1 death to the victim and 
-        set his kills to 0."""
+        """Checks hitlocation of kill"""
 
         # client (attacker)
         if client:
