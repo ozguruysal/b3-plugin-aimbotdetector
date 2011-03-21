@@ -39,6 +39,7 @@ __version__ = '1.1'
 import b3
 import b3.events
 import b3.plugin
+import time
 
 class HitlocStats:
     """Check for players killstreak for a set hit location
