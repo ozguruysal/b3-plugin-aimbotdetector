@@ -16,8 +16,13 @@ value, either the player is kicked or all online admins are notified.
 Changelog
 ---------
 
- * 17.03.2011 - Freelander
-     Initial release
+ * 17.03.2011 - 1.0 - Freelander
+    - Initial release
+ * 21.03.2011 - 1.1 - Freelander
+    - Added keyword "aimbotdetector" to display in echelon where available
+    - Ability to check more than one hit location
+    - Can choose between options; kick, tempban, permban or notify only
+    - Minor code enhancements
 
  
 Installation
