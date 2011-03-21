@@ -1,18 +1,34 @@
 <configuration plugin="aimbotdetector">
+	<!-- Hit location console code. You can add more than one location although not recommended! -->
+	<hitlocs>
+		<hitloc>head</hitloc>
+	</hitlocs>
 	<settings name="settings">
-		<!-- Hit location console code -->
-		<set name="hitloc">head</set>
 		<!-- 
 		Number of killstreak for the specific hitlocation. When the number 
 		specified here is reached, either the client will be kicked or online admins
 		get notified depending on your selection
 		-->
-		<set name="treshold">15</set>
+		<set name="treshold">10</set>
 		<!-- 
-		If you want player to be kicked when the treshold setting is reached, set it to "1"
-		If you want online admins get notified only, set it to "0"
+		You can choose different actions when the player reaches the treshold.
+		Please write the corresponding number of the action of your choice:
+			Kick        : 0
+			Tempban     : 1
+			Permban     : 2
+			Notify Only : 3
 		-->
-		<set name="kick">0</set>
+		<set name="action">3</set>
+		<!--
+		If you have chosen to tempban the player, you can define a duration
+		as in B3 duration format.
+		Example:
+			6m : 6 Minutes
+			2h : 2 Hours
+			1w : 1 Week
+			3d : 3 Days
+		-->
+		<set name="duration">2h</set>
 		<!--
 		If you have chosen to notify online admins, all admins equal or higher level will get 
 		notified via PM

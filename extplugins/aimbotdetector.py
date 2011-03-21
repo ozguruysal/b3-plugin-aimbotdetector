@@ -1,5 +1,5 @@
 # BigBrotherBot(B3) (www.bigbrotherbot.net)
-# Copyright (C) 2010
+# Copyright (C) 2011
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,21 +17,28 @@
 #
 #  NOTES:
 #  The idea of this plugin was suggested by B3 forum user Dragon25
-#  The core funstionality of this plugin is inspired from spree plugin by Walker.
+#  The core functionality of this plugin is inspired from spree plugin by Walker.
 #
 # CHANGELOG
 #
 # 17.03.2011 - 1.0 - Freelander
 #   * Initial release
-#  testing
+# 21.03.2011 - 1.1 - Freelander
+#   * Added keyword "aimbotdetector" to display in echelon where available
+#   * Ability to check more than one hit location
+#   * Can choose between options; kick, tempban, permban or notify only
+#   * Minor code enhancements
+#
+
 ## @file
 #  This plugin checks for possible cheaters using aimbot.
 
 __author__  = 'Freelander'
-__version__ = '1.0'
+__version__ = '1.1'
 
 import b3
 import b3.events
+import b3.plugin
 
 class HitlocStats:
     """Check for players killstreak for a set hit location
@@ -39,32 +46,74 @@ class HitlocStats:
 
     hitloc_kills = 0
 
+class Hitlocations:
+    _hitloc = None
+
 #-------------------------------------------------------------------------------------
 
 class AimbotdetectorPlugin(b3.plugin.Plugin):
     _adminPlugin = None
     _clientvar_name = 'hitloc_killstreak'
+    _hitlocs = []
 
     def onLoadConfig(self):
-        """Load setting from plugin config file"""
+        """Load settings from plugin config file"""
 
         # Get the settings from the config.
-        self.hitloc = self.config.get('settings', 'hitloc')
-        self.treshold = self.config.getint('settings', 'treshold')
-        self.debug('Players with %s %s kills in a row will be detected by Aimbot Detector' % (self.treshold, self.hitloc))
-        self.adminlevel = self.config.getint('settings', 'adminlevel')
-        self.ignorelevel = self.config.getint('settings', 'ignorelevel')
+        try:
+            for i in self.config.get('hitlocs/hitloc'):
+                _hl = Hitlocations()
+                _hl._hitloc = i.text.strip()
+                self._hitlocs.append(_hl._hitloc)
+                self.debug('Checking hitlocation :: %s' % _hl._hitloc)
+        except:
+            self._hitlocs = ['head']
+            self.debug('Using default hitlocation :: head')
+        try:
+            self.treshold = self.config.getint('settings', 'treshold')
+        except:
+            self.treshold = 15
+            self.debug = ('Using default treshold value (%s)' % self.treshold)
+        #self.debug('Players with %s %s kills in a row will be detected by Aimbot Detector' % (self.treshold, self.hitloc))
+        try:
+            self.adminlevel = self.config.getint('settings', 'adminlevel')
+        except:
+            self.adminlevel = 40
+            self.debug = ('Using default adminlevel value (%s)' % self.adminlevel)
+        try:
+            self.ignorelevel = self.config.getint('settings', 'ignorelevel')
+        except:
+            self.ignorelevel = 40
+            self.debug = ('Using default ignorelevel value (%s)' % self.ignorelevel)
         self.debug('Players with level %s and above will not be checked' % self.ignorelevel)
-        self.kick = self.config.getint('settings', 'kick')
+        try:
+            self.action = self.config.getint('settings', 'action')
+        except:
+            self.action = 1
 
-        if self.kick == 1:
-            self.debug('Aimbot Detector Plugin is set to kick')
-        else:
-            self.debug('Aimbot Detector Plugin is set to notify admins online')
+        _actions = ['kick', 'tempban', 'permban', 'notify only']
+        for i in _actions:
+            _choice = _actions[self.action]
+
+        self.debug('Aimbot Detector Plugin is set to %s' % _actions[self.action])
+
+        if self.action == 1:
+            try:
+                self.duration = self.config.get('settings', 'duration')
+                self.debug('Tempban duration is: %s' % self.duration)
+            except:
+                self.duration = '2h'
+                self.debug('Using default tempban duration %s' % self.duration)
 
         # Get the messages from the config.
-        self.warnmessage = self.config.get('messages', 'warnmessage')
-        self.kickmessage = self.config.get('messages', 'kickmessage')
+        try:
+            self.warnmessage = self.config.get('messages', 'warnmessage')
+        except:
+            self.warnmessage = '^1ATTENTION: ^7%s maybe using aimbot! Better check it out.'
+        try:
+            self.kickmessage = self.config.get('messages', 'kickmessage')
+        except:
+            self.kickmessage = '^1Aimbot Detected!'
 
         self.debug('Starting')
 
@@ -112,9 +161,9 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             #check hitlocation of the kill is the hitlocation we are watching
             #if it is, add it to player's streak. Otherwise the player is shooting different
             #bodyparts each time so we reset his hitloc streak
-            if damage_location == self.hitloc:
+            if damage_location in self._hitlocs:
                 HitlocStats.hitloc_kills += 1
-                self.debug('%s has a %s %s kill streak' % (client.name, HitlocStats.hitloc_kills, self.hitloc))
+                self.debug('%s has a %s kill streak for monitored bodyparts' % (client.name, HitlocStats.hitloc_kills))
                 self.checkHitlocKillStreak(HitlocStats.hitloc_kills, client)
             else:
                 HitlocStats.hitloc_kills = 0
@@ -127,10 +176,16 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
         if client.maxLevel < self.ignorelevel:
             if hitloc_kills >= self.treshold: #Set it to greater or equal to just in case rcon send fails
                 self.debug('%s has got %s hitloc kills in a row and reached treshold level' % (client.name, self.treshold))
-                if self.kick == 1:
+                if self.action == 0:
                     self.debug('Kicking Player')
-                    client.kick(self.kickmessage)
-                else:
+                    client.kick(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
+                elif self.action == 1:
+                    self.debug('Temporarily Banning Player')
+                    client.tempban(reason=self.kickmessage, keyword="aimbotdetector", duration=self.duration, data="%s kills" % hitloc_kills)
+                elif self.action == 2:
+                    self.debug('Permanently Banning Player')
+                    client.ban(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
+                elif self.action == 3:
                     self.debug('Sending PM to all admins online')
                     self.pmAdmins(client.name)
 
@@ -142,3 +197,44 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             if player.maxLevel >= self.adminlevel:
                 player.message(self.warnmessage % suspect)
                 time.sleep(0.5)
+
+
+if __name__ == '__main__':
+    from b3.fake import fakeConsole
+    from b3.fake import joe, simon, moderator, superadmin
+    import time
+
+    from b3.config import XmlConfigParser
+
+    conf = XmlConfigParser()
+    conf.setXml("""\
+    <configuration plugin="aimbotdetector">
+        <hitlocs>
+            <hitloc>1</hitloc>
+        </hitlocs>
+        <settings name="settings">
+            <set name="treshold">3</set>
+            <set name="action">1</set>
+            <set name="duration">2h</set>
+            <set name="adminlevel">40</set>
+            <set name="ignorelevel">40</set>
+        </settings>
+        <settings name="messages">
+            <set name="warnmessage">^1ATTENTION: ^7%s maybe using aimbot! Better check it out.</set>
+            <set name="kickmessage">^1Aimbot Detected!</set>
+        </settings>
+    </configuration>
+
+    """)
+    traceback = ''
+    p = AimbotdetectorPlugin(fakeConsole, conf)
+    p.onStartup()
+
+    print '------------------------------'
+    joe.connects(cid=1)
+    superadmin.connects(cid=3)
+    joe.kills(superadmin)
+    print '------------------------------'
+    joe.kills(superadmin)
+    print '------------------------------'
+    joe.kills(superadmin)
