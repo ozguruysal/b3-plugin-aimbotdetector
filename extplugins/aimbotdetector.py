@@ -197,13 +197,12 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
         for player in clients:
             if player.maxLevel >= self.adminlevel:
                 player.message(self.warnmessage % suspect)
-                time.sleep(0.5)
+                time.sleep(1)
 
 
 if __name__ == '__main__':
     from b3.fake import fakeConsole
     from b3.fake import joe, simon, moderator, superadmin
-    import time
 
     from b3.config import XmlConfigParser
 
@@ -211,13 +210,13 @@ if __name__ == '__main__':
     conf.setXml("""\
     <configuration plugin="aimbotdetector">
         <hitlocs>
-            <hitloc>1</hitloc>
+            <hitloc>head</hitloc>
         </hitlocs>
         <settings name="settings">
             <set name="treshold">3</set>
-            <set name="action">1</set>
+            <set name="action">3</set>
             <set name="duration">2h</set>
-            <set name="adminlevel">40</set>
+            <set name="adminlevel">20</set>
             <set name="ignorelevel">40</set>
         </settings>
         <settings name="messages">
@@ -227,13 +226,15 @@ if __name__ == '__main__':
     </configuration>
 
     """)
-    traceback = ''
+
     p = AimbotdetectorPlugin(fakeConsole, conf)
     p.onStartup()
 
     print '------------------------------'
     joe.connects(cid=1)
     superadmin.connects(cid=3)
+    moderator.connects(cid=5)
+    simon.connects(cid=7)
     joe.kills(superadmin)
     print '------------------------------'
     joe.kills(superadmin)
