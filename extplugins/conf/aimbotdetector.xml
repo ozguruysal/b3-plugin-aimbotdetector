@@ -5,9 +5,9 @@
 	</hitlocs>
 	<settings name="settings">
 		<!-- 
-		Number of killstreak for the specific hitlocation. When the number 
-		specified here is reached, either the client will be kicked or online admins
-		get notified depending on your selection
+		Number of killstreak for the specific hitlocation(s). When the number 
+		specified here is reached, an action will be triggered depending
+		on your selection in action setting.
 		-->
 		<set name="treshold">10</set>
 		<!-- 
@@ -40,5 +40,25 @@
 	<settings name="messages">
 		<set name="warnmessage">^1ATTENTION: ^7%s maybe using aimbot! Better check it out.</set>
 		<set name="kickmessage">^1Aimbot Detected!</set>
+	</settings>
+	<settings name="mail">
+		<!-- Do you want to send e-mail to admin(s) when the bot detects a suspicious player? -->
+		<set name="mailtoadmin">no</set>
+		<!-- Your game server name to be included in e-mail message. Useful if you have multiple servers -->
+		<set name="servername">Your Server Name</set>
+		<!-- Sender's Real Name -->
+		<set name="sendername">Your Name</set>
+		<!-- Sender's e-mail address -->
+		<set name="sendermail">you@example.com</set>
+		<!-- Receivers' e-mail addresses (separate with comma (,) if multiple receivers) -->
+		<set name="receivers">admin_1@example.com, admin_2@example.com</set>
+		<!-- Your SMTP server Example: mail.example.com. For Google that is smtp.gmail.com:587 -->
+		<set name="smtp">mail.example.com</set>
+		<!-- E-mail login name -->
+		<set name="login">login_name</set>
+		<!-- E-mail password -->
+		<set name="password">password</set>
+		<!-- Your E-mail message body -->
+		<set name="emailbody">Attention! A suspicious player detected!</set>
 	</settings>
 </configuration>

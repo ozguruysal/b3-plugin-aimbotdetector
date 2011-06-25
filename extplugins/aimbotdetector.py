@@ -1,5 +1,6 @@
-# BigBrotherBot(B3) (www.bigbrotherbot.net)
-# Copyright (C) 2011
+#
+# Aimbot Detector Plugin for BigBrotherBot(B3) (www.bigbrotherbot.net)
+# Copyright (C) 2011 Freelander - www.fps-gamer.net
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,23 +24,27 @@
 #
 # 17.03.2011 - 1.0 - Freelander
 #   * Initial release
-# 21.03.2011 - 1.1 - Freelander
-#   * Added keyword "aimbotdetector" to display in echelon where available
+# 22.03.2011 - 1.1 - Freelander
+#   * Added keyword "aimbotdetector" to display in echelon
 #   * Ability to check more than one hit location
 #   * Can choose between options; kick, tempban, permban or notify only
-#   * Minor code enhancements
+#   * Minor enhancements
+# 25.06.2011 - 1.2 - Freelander
+#   * Option to send e-mail to selected e-mail address(es) when a suspicious
+#     player is detected
 #
 
 ## @file
 #  This plugin checks for possible cheaters using aimbot.
 
 __author__  = 'Freelander'
-__version__ = '1.1'
+__version__ = '1.2'
 
 import b3
 import b3.events
 import b3.plugin
 import time
+import smtplib
 
 class HitlocStats:
     """Check for players killstreak for a set hit location
@@ -92,11 +97,9 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
         except:
             self.action = 1
 
-        _actions = ['kick', 'tempban', 'permban', 'notify only']
-        for i in _actions:
-            _choice = _actions[self.action]
+        self._actions = ['kick', 'tempban', 'permban', 'notify only']
 
-        self.debug('Aimbot Detector Plugin is set to %s' % _actions[self.action])
+        self.debug('Aimbot Detector Plugin is set to %s' % self._actions[self.action])
 
         if self.action == 1:
             try:
@@ -115,6 +118,32 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             self.kickmessage = self.config.get('messages', 'kickmessage')
         except:
             self.kickmessage = '^1Aimbot Detected!'
+
+        # Get e-mail settings
+        try:
+            self.mailtoadmin = self.config.getboolean('mail', 'mailtoadmin')
+        except:
+            self.mailtoadmin = False
+            self.debug('Cannot load e-mail option, disabling...')
+
+        if self.mailtoadmin:
+            self.info('E-mail feature is enabled!')
+        else:
+            self.info('E-mail feature is disabled!')
+
+        if self.mailtoadmin:
+            try:
+                self.servername = self.config.get('mail', 'servername')
+                self.sendername = self.config.get('mail', 'sendername')
+                self.sendermail = self.config.get('mail', 'sendermail')
+                self.receivers = self.config.get('mail', 'receivers')
+                self.smtp = self.config.get('mail', 'smtp')
+                self.login = self.config.get('mail', 'login')
+                self.password = self.config.get('mail', 'password')
+                self.emailbody = self.config.get('mail', 'emailbody')
+            except:
+                self.debug('Cannot load e-mail settings, please check your config file. Disabling e-mailing feature...')
+                self.mailtoadmin = False
 
         self.debug('Starting')
 
@@ -190,6 +219,10 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
                     self.debug('Sending PM to all admins online')
                     self.pmAdmins(client.name)
 
+            if hitloc_kills == self.treshold: #send alert mail only once
+                if self.mailtoadmin:
+                    self.mail2Admins(client)
+
     def pmAdmins(self, suspect):
         """Send a PM message to connected admins"""
 
@@ -199,6 +232,47 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
                 player.message(self.warnmessage % suspect)
                 time.sleep(1)
 
+    def mail2Admins(self, client=None):
+        """Send mail to admin(s)"""
+
+        if ',' in self.receivers:
+            receivers = self.receivers.split(',')
+            m = []
+            for r in receivers:
+                m.append('<%s>' % r.strip())
+            receivers_address = ', '.join(m)
+        else:
+            receivers_address = '<%s>' % self.receivers
+            receivers = self.receivers
+
+        self.debug('Sending alert e-mail to %s' % receivers)
+
+        message  = 'From: %s <%s>\n' % (self.sendername, self.sendermail)
+        message += 'To: %s\n' % receivers_address
+        message += 'Date: %s\n' % time.ctime(time.time())
+        message += 'Subject: [B3]Aimbot Detector Alert!!!\n'
+        message += '%s\n\n' % self.emailbody
+        message += '=========================================================\n'
+        message += 'INFORMATION\n'
+        message += '---------------------------------------------------------\n'
+        message += 'Date/Time    : %s\n' % time.ctime(time.time())
+        message += 'Server Name  : %s\n' % self.servername
+        message += 'Player Name  : %s\n' % client.name
+        message += 'IP           : %s\n' % client.ip
+        message += 'GUID         : %s\n' % client.guid
+        message += 'Action Taken : %s\n' % self._actions[self.action].title()
+        message += '---------------------------------------------------------\n'
+
+        try:
+            smtpObj = smtplib.SMTP(self.smtp)
+            smtpObj.starttls()
+            smtpObj.login(self.login, self.password)
+            smtpObj.sendmail(self.sendermail, receivers, message)         
+            self.info('Successfully sent e-mail')
+        except Exception, err:
+            self.debug('Error: unable to send e-mail: %s' % err)
+
+#-------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
     from b3.fake import fakeConsole
@@ -207,31 +281,79 @@ if __name__ == '__main__':
     from b3.config import XmlConfigParser
 
     conf = XmlConfigParser()
-    conf.setXml("""\
+    conf.setXml('''\
     <configuration plugin="aimbotdetector">
+        <!-- Hit location console code. You can add more than one location although not recommended! -->
         <hitlocs>
             <hitloc>head</hitloc>
         </hitlocs>
         <settings name="settings">
-            <set name="treshold">3</set>
-            <set name="action">3</set>
+            <!-- 
+            Number of killstreak for the specific hitlocation. When the number 
+            specified here is reached, either the client will be kicked or online admins
+            get notified depending on your selection
+            -->
+            <set name="treshold">2</set>
+            <!-- 
+            You can choose different actions when the player reaches the treshold.
+            Please write the corresponding number of the action of your choice:
+            Kick        : 0
+            Tempban     : 1
+            Permban     : 2
+            Notify Only : 3
+            -->
+            <set name="action">0</set>
+            <!--
+            If you have chosen to tempban the player, you can define a duration
+            as in B3 duration format.
+            Example:
+            6m : 6 Minutes
+            2h : 2 Hours
+            1w : 1 Week
+            3d : 3 Days
+            -->
             <set name="duration">2h</set>
-            <set name="adminlevel">20</set>
+            <!--
+            If you have chosen to notify online admins, all admins equal or higher level will get 
+            notified via PM
+            -->
+            <set name="adminlevel">40</set>
+            <!-- Minimum level to ignore. i.e. players with equal or higher level will not be checked -->
             <set name="ignorelevel">40</set>
         </settings>
         <settings name="messages">
             <set name="warnmessage">^1ATTENTION: ^7%s maybe using aimbot! Better check it out.</set>
             <set name="kickmessage">^1Aimbot Detected!</set>
         </settings>
+        <settings name="mail">
+            <!-- Do you want to send e-mail to admin(s) when the bot detects a suspicious player? -->
+            <set name="mailtoadmin">yes</set>
+            <!-- Your game server name to be included in e-mail message. Useful if you have multiple servers -->
+            <set name="servername">Game Server Name</set>
+            <!-- Sender's Real Name -->
+            <set name="sendername">Your Name</set>
+            <!-- Sender's e-mail address -->
+            <set name="sendermail">you@example.com</set>
+            <!-- Receivers' e-mail addresses (separate with comma (,)) -->
+            <set name="receivers">admin_1@example.com, admin_2@example.com</set>
+            <!-- Your SMTP server Example: mail.example.com. For Google that is smtp.gmail.com:587 -->
+            <set name="smtp">mail.example.com</set>
+            <!-- E-mail login name -->
+            <set name="login">login_name</set>
+            <!-- E-mail password -->
+            <set name="password">password</set>
+            <!-- Your E-mail message body -->
+            <set name="emailbody">Attention! A suspicious player detected, better get your ass into the server</set>
+        </settings>
     </configuration>
-
-    """)
+    ''')
 
     p = AimbotdetectorPlugin(fakeConsole, conf)
     p.onStartup()
 
     print '------------------------------'
     joe.connects(cid=1)
+    joe.ip = '111.222.333.444'
     superadmin.connects(cid=3)
     moderator.connects(cid=5)
     simon.connects(cid=7)

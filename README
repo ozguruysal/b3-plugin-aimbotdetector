@@ -23,6 +23,9 @@ Changelog
     - Ability to check more than one hit location
     - Can choose between options; kick, tempban, permban or notify only
     - Minor code enhancements
+ * 25.06.2011 - 1.2 - Freelander
+    - Option to send e-mail to selected e-mail address(es) when a suspicious
+      player is detected
 
  
 Installation
