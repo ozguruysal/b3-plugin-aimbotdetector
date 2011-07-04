@@ -155,6 +155,10 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             self.error('Could not find admin plugin')
             return False
 
+        self._followPlugin = self.console.getPlugin('follow')
+        if self._followPlugin:
+            self.info('Found the follow plugin, hooking in to it.')
+
         # listen for client events
         self.verbose('Registering events')
         self.registerEvent(b3.events.EVT_CLIENT_KILL)
@@ -209,15 +213,18 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
                 if self.action == 0:
                     self.debug('Kicking Player')
                     client.kick(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
+                    self.addFollow(client)
                 elif self.action == 1:
                     self.debug('Temporarily Banning Player')
                     client.tempban(reason=self.kickmessage, keyword="aimbotdetector", duration=self.duration, data="%s kills" % hitloc_kills)
+                    self.addFollow(client)
                 elif self.action == 2:
                     self.debug('Permanently Banning Player')
                     client.ban(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
                 elif self.action == 3:
                     self.debug('Sending PM to all admins online')
                     self.pmAdmins(client.name)
+                    self.addFollow(client)
 
             if hitloc_kills == self.treshold: #send alert mail only once
                 if self.mailtoadmin:
@@ -231,6 +238,24 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             if player.maxLevel >= self.adminlevel:
                 player.message(self.warnmessage % suspect)
                 time.sleep(1)
+
+    def addFollow(self, sclient):
+        """Add the suspect to the follow plugin database if installed"""
+
+        if not self._followPlugin:
+            return None
+
+        # if we have a hook to the follow plugin, let's tag the suspect to be followed
+        cursor = self.console.storage.query(self._followPlugin._SELECT_QUERY % sclient.id)
+        if cursor.rowcount == 0:
+            cursor2 = self.console.storage.query(
+                self._followPlugin._ADD_QUERY % (sclient.id, 0, self.console.time(), 'Tagged by Aimbotdetector!'))
+            cursor2.close()
+            self.debug("Suspect added to follow plugins watch list")
+        else:
+            self.debug("Suspect already in follow plugins watch list")
+        cursor.close()
+        self._followPlugin.sync_list(None)
 
     def mail2Admins(self, client=None):
         """Send mail to admin(s)"""
