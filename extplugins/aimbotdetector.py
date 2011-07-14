@@ -212,12 +212,12 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
                 self.debug('%s has got %s hitloc kills in a row and reached treshold level' % (client.name, self.treshold))
                 if self.action == 0:
                     self.debug('Kicking Player')
-                    client.kick(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
                     self.addFollow(client)
+                    client.kick(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
                 elif self.action == 1:
                     self.debug('Temporarily Banning Player')
-                    client.tempban(reason=self.kickmessage, keyword="aimbotdetector", duration=self.duration, data="%s kills" % hitloc_kills)
                     self.addFollow(client)
+                    client.tempban(reason=self.kickmessage, keyword="aimbotdetector", duration=self.duration, data="%s kills" % hitloc_kills)
                 elif self.action == 2:
                     self.debug('Permanently Banning Player')
                     client.ban(reason=self.kickmessage, keyword="aimbotdetector", data="%s kills" % hitloc_kills)
