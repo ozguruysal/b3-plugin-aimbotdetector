@@ -32,13 +32,15 @@
 # 25.06.2011 - 1.2 - Freelander
 #   * Option to send e-mail to selected e-mail address(es) when a suspicious
 #     player is detected
+# 14.07.2011 - 1.3 - xlr8or
+#   * Integration with follow plugin v1.1.5+ : detected players automatically added in follow list
 #
 
 ## @file
 #  This plugin checks for possible cheaters using aimbot.
 
 __author__  = 'Freelander'
-__version__ = '1.2'
+__version__ = '1.3'
 
 import b3
 import b3.events
