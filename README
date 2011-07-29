@@ -8,10 +8,32 @@ Author URI: http://www.fps-gamer.net
 Description
 -----------
 
-This plugin detects unusual killstreaks for a given body part. (Generally this is supposed to be headshot kills)
-For instance it can be adjusted to detect headshots made in a row and if headshot kill streak reaches to a set 
-value, either the player is kicked or all online admins are notified.
+This plugin detects unusual killstreaks and when a suspicious user is detected he is either
+kicked, tempbanned, banned or online admins notified depending on your selection. it can also send 
+you an alert e-mail.
 
+How to Use the Plugin
+---------------------
+
+You can use this plugin in different ways.
+
+For example you can check for consecutive kills for a given hit location. Let's say you configured the 
+plugin to check headshots only and set the treshold to 5. In this case, the plugin will trigger if any 
+player makes 5 headshots in a row without dying. If you add more than one hit location, remember that 
+plugin will count the total of all hitlocations you entered.
+
+There's also a time limit option as of version 1.4. If you use that option, the plugin will count the 
+consecutive kills achived within the time limit. For example 10 kills in 8 seconds. If you're using time 
+limit, it's always better to add all hitlocations in the config file.
+
+It's also a good idea to exclude weapons gained by killstreaks if available in the game. For example you 
+can get many kills using carpet bomb in cod blackops and that will lead to a false alarm if you haven't 
+excluded the weapon.
+
+All settings in the config file have explanation above them. Remember that if you're not sure of your 
+settings, always use notify only option to avoid false kicks and bans.
+
+If you have any question, feel free to use the support forums.
 
 Changelog
 ---------
@@ -28,6 +50,10 @@ Changelog
       player is detected
  * 14.07.2011 - 1.3 - xlr8or
     - Integration with follow plugin v1.1.5+ : detected players automatically added in follow list
+ * 28.07.2011 - 1.4 - Freelander
+    - Added time limit option
+    - Ability to exclude weapons awarded by killstreak or similar
+    - Now resets killstreak of player when killed
 
 Installation
 ------------

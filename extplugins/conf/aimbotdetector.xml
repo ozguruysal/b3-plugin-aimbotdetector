@@ -1,8 +1,15 @@
 <configuration plugin="aimbotdetector">
-	<!-- Hit location console code. You can add more than one location although not recommended! -->
+	<!-- Hit location console code. You can add more than one location. -->
 	<hitlocs>
 		<hitloc>head</hitloc>
 	</hitlocs>
+	<!--
+	You can exclude weapons from the checklist. Especially killstreak awards.
+	This is especially useful if you're using time limit feature.
+	-->
+	<excluded_weapons>
+		<weapon>rcbomb_mp</weapon>
+	</excluded_weapons>
 	<settings name="settings">
 		<!-- 
 		Number of killstreak for the specific hitlocation(s). When the number 
@@ -10,6 +17,12 @@
 		on your selection in action setting.
 		-->
 		<set name="treshold">10</set>
+		<!--
+		Set the time limit you want in seconds. This setting is useful if you want 
+		to check the killstreak speed of players. For example 10 kills in 8 seconds 
+		may be suspicious. Setting it to "0" will override this feature.
+		-->
+		<set name="time_limit">0</set>
 		<!-- 
 		You can choose different actions when the player reaches the treshold.
 		Please write the corresponding number of the action of your choice:

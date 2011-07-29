@@ -34,13 +34,17 @@
 #     player is detected
 # 14.07.2011 - 1.3 - xlr8or
 #   * Integration with follow plugin v1.1.5+ : detected players automatically added in follow list
+# 28.07.2011 - 1.4 - Freelander
+#   * Added time limit option
+#   * Ability to exclude weapons awarded by killstreak or similar
+#   * Now resets killstreak of player when killed
 #
 
 ## @file
 #  This plugin checks for possible cheaters using aimbot.
 
 __author__  = 'Freelander'
-__version__ = '1.3'
+__version__ = '1.4'
 
 import b3
 import b3.events
@@ -53,6 +57,9 @@ class HitlocStats:
     that is generally headshots"""
 
     hitloc_kills = 0
+    killstreak_start_time = None
+    killstreak_end_time = None
+    killstreak_duration = None
 
 class Hitlocations:
     _hitloc = None
@@ -63,6 +70,7 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
     _adminPlugin = None
     _clientvar_name = 'hitloc_killstreak'
     _hitlocs = []
+    _excluded_weapons = []
 
     def onLoadConfig(self):
         """Load settings from plugin config file"""
@@ -78,11 +86,26 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             self._hitlocs = ['head']
             self.debug('Using default hitlocation :: head')
         try:
+            for i in self.config.get('excluded_weapons/weapon'):
+                self._excluded_weapons.append(i.text.strip())
+                self.debug('Excluding weapon :: %s' % i.text.strip())
+        except:
+            self._excluded_weapons = []
+        try:
             self.treshold = self.config.getint('settings', 'treshold')
         except:
             self.treshold = 15
             self.debug = ('Using default treshold value (%s)' % self.treshold)
         #self.debug('Players with %s %s kills in a row will be detected by Aimbot Detector' % (self.treshold, self.hitloc))
+        try:
+            self.time_limit = self.config.getint('settings', 'time_limit')
+            if self.time_limit >= 0:
+                self.debug('Time limit: Enabled')
+            else:
+                self.debug('Time limit: Disabled')
+        except:
+            self.time_limit = 0
+            self.debug('Cannot get time limit vallue, disabling time limit')
         try:
             self.adminlevel = self.config.getint('settings', 'adminlevel')
         except:
@@ -158,7 +181,7 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
             return False
 
         self._followPlugin = self.console.getPlugin('follow')
-        if self._followPlugin:
+        if self._followPlugin: #and getattr(self._followPlugin, '__version__') >= 1.1.5:
             self.info('Found the follow plugin, hooking in to it.')
 
         # listen for client events
@@ -167,15 +190,18 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
 
         self.debug('Started')
 
-    def handle(self, event):
+    def onEvent(self, event):
         """Handle intercepted events"""
 
         if event.type == b3.events.EVT_CLIENT_KILL:
+            weapon = event.data[1]
             damage_location = event.data[2]
-            self.checkHitlocKills(event.client, event.target, damage_location)
+
+            if weapon not in self._excluded_weapons:
+                self.checkHitlocKills(event.client, event.target, damage_location)
 
     def getHitlocStats(self, client):
-        """Get the clients killstreak for a specific hitlocation"""
+        """Get the client's killstreak stats for specificied hitlocation(s)"""
         
         if not client.isvar(self, self._clientvar_name):
             # initialize the default HitlocStats object
@@ -188,30 +214,55 @@ class AimbotdetectorPlugin(b3.plugin.Plugin):
     def checkHitlocKills(self, client=None, victim=None, damage_location=None):
         """Checks hitlocation of kill"""
 
+        if victim:
+            HitlocStats = self.getHitlocStats(victim)
+            #reset killstreak when player gets killed
+            HitlocStats.hitloc_kills = 0
+
         # client (attacker)
         if client:
             # we grab our HitlocStats object here
             # any changes to its values will be saved "automagically"
             HitlocStats = self.getHitlocStats(client)
-            
-            #check hitlocation of the kill is the hitlocation we are watching
-            #if it is, add it to player's streak. Otherwise the player is shooting different
-            #bodyparts each time so we reset his hitloc streak
+
+            # check if hitlocation of the kill is in the hitlocations we are watching and with
+            # a non excluded weapon. if it is, add it to player's streak. Otherwise we reset 
+            # his hitloc streak
             if damage_location in self._hitlocs:
                 HitlocStats.hitloc_kills += 1
                 self.debug('%s has a %s kill streak for monitored bodyparts' % (client.name, HitlocStats.hitloc_kills))
+
+                # Do we have time limit set? let's see how many seconds it took to get kill streak.
+                if self.time_limit > 0:
+                    if HitlocStats.hitloc_kills == 1:
+                        HitlocStats.killstreak_start_time = time.time()
+                        #self.debug('%s\'s killstreak start time: %s' % (client.name, HitlocStats.killstreak_start_time))
+                    if HitlocStats.hitloc_kills >= self.treshold:
+                        HitlocStats.killstreak_end_time = time.time()
+                        #self.debug('%s\'s killstreak end time: %s' % (client.name, HitlocStats.killstreak_end_time))
+                        HitlocStats.killstreak_duration = round((HitlocStats.killstreak_end_time - HitlocStats.killstreak_start_time), 2)
+                        #self.debug('%s\'s killstreak time: %s' % (client.name, HitlocStats.killstreak_duration))
+
+                        if HitlocStats.killstreak_duration > self.time_limit:
+                            self.debug('%s had %s kills in %s seconds, our time limit is %s seconds. That\'s acceptable, ignoring...' \
+                                       % (client.name, HitlocStats.hitloc_kills, HitlocStats.killstreak_duration, self.time_limit))
+                            return
+                        else:
+                            self.debug('ALERT: %s had %s kills in %s seconds, our time limit is %s seconds. That\'s suspicious!' \
+                                       % (client.name, HitlocStats.hitloc_kills, HitlocStats.killstreak_duration, self.time_limit))
+
                 self.checkHitlocKillStreak(HitlocStats.hitloc_kills, client)
             else:
                 HitlocStats.hitloc_kills = 0
                 #self.debug('Hitloc killstreak was reset for %s' % client.name)
 
     def checkHitlocKillStreak(self, hitloc_kills, client=None):
-        """chekcs if the clients current hitloc killstreak reaches to theshold set
+        """chekcs if the attacker's current hitloc killstreak reaches to theshold set
         and acts accordingly"""
 
         if client.maxLevel < self.ignorelevel:
             if hitloc_kills >= self.treshold: #Set it to greater or equal to just in case rcon send fails
-                self.debug('%s has got %s hitloc kills in a row and reached treshold level' % (client.name, self.treshold))
+                self.debug('%s has got %s hitloc kills in a row and reached treshold level' % (client.name, hitloc_kills))
                 if self.action == 0:
                     self.debug('Kicking Player')
                     self.addFollow(client)
@@ -313,7 +364,18 @@ if __name__ == '__main__':
         <!-- Hit location console code. You can add more than one location although not recommended! -->
         <hitlocs>
             <hitloc>head</hitloc>
+            <hitloc>torso</hitloc>
         </hitlocs>
+        <!--
+        You can exclude weapons from the checklist. Especially killstreak awards.
+        This is especially useful if you're using time limit feature.
+        Below is a list of cod blackops kill streaks
+        -->
+        <excluded_weapons>
+            <weapon>rcbomb_mp</weapon>
+            <weapon>napalm_mp</weapon>
+            <weapon>auto_gun_turret_mp</weapon>
+        </excluded_weapons>
         <settings name="settings">
             <!-- 
             Number of killstreak for the specific hitlocation. When the number 
@@ -321,6 +383,12 @@ if __name__ == '__main__':
             get notified depending on your selection
             -->
             <set name="treshold">2</set>
+            <!--
+            Set the time limit you want in seconds. This setting is useful if you want 
+            to check the killstreak speed of players. For example 10 kills in 8 seconds 
+            may be suspicious. Setting it to "0" will override this feature.
+            -->
+            <set name="time_limit">5</set>
             <!-- 
             You can choose different actions when the player reaches the treshold.
             Please write the corresponding number of the action of your choice:
@@ -329,7 +397,7 @@ if __name__ == '__main__':
             Permban     : 2
             Notify Only : 3
             -->
-            <set name="action">0</set>
+            <set name="action">3</set>
             <!--
             If you have chosen to tempban the player, you can define a duration
             as in B3 duration format.
@@ -354,7 +422,7 @@ if __name__ == '__main__':
         </settings>
         <settings name="mail">
             <!-- Do you want to send e-mail to admin(s) when the bot detects a suspicious player? -->
-            <set name="mailtoadmin">yes</set>
+            <set name="mailtoadmin">no</set>
             <!-- Your game server name to be included in e-mail message. Useful if you have multiple servers -->
             <set name="servername">Game Server Name</set>
             <!-- Sender's Real Name -->
@@ -384,8 +452,23 @@ if __name__ == '__main__':
     superadmin.connects(cid=3)
     moderator.connects(cid=5)
     simon.connects(cid=7)
-    joe.kills(superadmin)
+    joe.kills(superadmin, location='head')
     print '------------------------------'
-    joe.kills(superadmin)
+    time.sleep(2)
+    joe.kills(superadmin, weapon='rcbomb_mp', location='head')
     print '------------------------------'
-    joe.kills(superadmin)
+    time.sleep(2)
+    joe.kills(superadmin, location='torso')
+    print '------------------------------'
+    time.sleep(2)
+    joe.kills(simon, location='neck')
+    print '------------------------------'
+    time.sleep(2)
+    joe.kills(simon, location='head')
+    print '------------------------------'
+    #time.sleep(2)
+    #simon.kills(joe, location='neck')
+    #print '------------------------------'
+    time.sleep(6)
+    joe.kills(simon, location='head')
+    print '------------------------------'
